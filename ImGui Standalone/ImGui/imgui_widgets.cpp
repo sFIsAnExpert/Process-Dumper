@@ -3409,6 +3409,81 @@ bool ImGui::TempInputScalar(const ImRect& bb, ImGuiID id, const char* label, ImG
 
 // Note: p_data, p_step, p_step_fast are _pointers_ to a memory address holding the data. For an Input widget, p_step and p_step_fast are optional.
 // Read code of e.g. InputFloat(), InputInt() etc. or examples in 'Demo->Widgets->Data Types' to understand how to use this function directly.
+
+bool ImGui::InputScalarL(const char* label, ImGuiDataType data_type, void* p_data, const void* p_step, const void* p_step_fast, const char* format, ImGuiInputTextFlags flags)
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return false;
+
+    ImGuiContext& g = *GImGui;
+    ImGuiStyle& style = g.Style;
+
+    if (format == NULL)
+        format = DataTypeGetInfo(data_type)->PrintFmt;
+
+    char buf[128];
+    DataTypeFormatString(buf, IM_ARRAYSIZE(buf), data_type, p_data, format);
+
+    // Testing ActiveId as a minor optimization as filtering is not needed until active
+    if (g.ActiveId == 0 && (flags & (ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsScientific)) == 0)
+        flags |= InputScalar_DefaultCharsFilter(data_type, format);
+    flags |= ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_NoMarkEdited; // We call MarkItemEdited() ourselves by comparing the actual data rather than the string.
+
+    bool value_changed = false;
+    if (p_step != NULL)
+    {
+        const float button_size = GetFrameHeight();
+
+        BeginGroup(); // The only purpose of the group here is to allow the caller to query item data e.g. IsItemActive()
+        PushID(label);
+        SetNextItemWidth(ImMax(1.0f, CalcItemWidth() - (button_size + style.ItemInnerSpacing.x) * 2));
+        if (InputText("", buf, IM_ARRAYSIZE(buf), flags)) // PushId(label) + "" gives us the expected ID from outside point of view
+            value_changed = DataTypeApplyFromText(buf, data_type, p_data, format);
+
+        // Step buttons
+        const ImVec2 backup_frame_padding = style.FramePadding;
+        style.FramePadding.x = style.FramePadding.y;
+        ImGuiButtonFlags button_flags = ImGuiButtonFlags_Repeat | ImGuiButtonFlags_DontClosePopups;
+        if (flags & ImGuiInputTextFlags_ReadOnly)
+            BeginDisabled();
+        SameLine(0, style.ItemInnerSpacing.x);
+        if (ButtonEx("-", ImVec2(button_size, button_size), button_flags))
+        {
+            DataTypeApplyOp(data_type, '-', p_data, p_data, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+            value_changed = true;
+        }
+        SameLine(0, style.ItemInnerSpacing.x);
+        if (ButtonEx("+", ImVec2(button_size, button_size), button_flags))
+        {
+            DataTypeApplyOp(data_type, '+', p_data, p_data, g.IO.KeyCtrl && p_step_fast ? p_step_fast : p_step);
+            value_changed = true;
+        }
+        if (flags & ImGuiInputTextFlags_ReadOnly)
+            EndDisabled();
+
+        const char* label_end = FindRenderedTextEnd(label);
+        if (label != label_end)
+        {
+            SameLine(0, style.ItemInnerSpacing.x);
+            TextEx(label, label_end);
+        }
+        style.FramePadding = backup_frame_padding;
+
+        PopID();
+        EndGroup();
+    }
+    else
+    {
+        if (InputText(label, buf, IM_ARRAYSIZE(buf), flags))
+            value_changed = DataTypeApplyFromText(buf, data_type, p_data, format);
+    }
+    if (value_changed)
+        MarkItemEdited(g.LastItemData.ID);
+
+    return value_changed;
+}
+
 bool ImGui::InputScalar(const char* label, ImGuiDataType data_type, void* p_data, const void* p_step, const void* p_step_fast, const char* format, ImGuiInputTextFlags flags)
 {
     ImGuiWindow* window = GetCurrentWindow();
@@ -3544,6 +3619,12 @@ bool ImGui::InputInt(const char* label, int* v, int step, int step_fast, ImGuiIn
     // Hexadecimal input provided as a convenience but the flag name is awkward. Typically you'd use InputText() to parse your own data, if you want to handle prefixes.
     const char* format = (flags & ImGuiInputTextFlags_CharsHexadecimal) ? "%08X" : "%d";
     return InputScalar(label, ImGuiDataType_S32, (void*)v, (void*)(step > 0 ? &step : NULL), (void*)(step_fast > 0 ? &step_fast : NULL), format, flags);
+}
+
+bool ImGui::InputLong(const char* label, unsigned long long* v, int step, int step_fast, ImGuiInputTextFlags flags)
+{
+    const char* format = (flags & ImGuiInputTextFlags_CharsHexadecimal) ? "%08X" : "%d";
+    return InputScalarL(label, ImGuiDataType_S64, (void*)v, (void*)(step > 0 ? &step : NULL), (void*)(step_fast > 0 ? &step_fast : NULL), format, flags);
 }
 
 bool ImGui::InputInt2(const char* label, int v[2], ImGuiInputTextFlags flags)

@@ -22,15 +22,17 @@ enum TAB {
 	LOADPROCESS = 1,
 	DUMP = 2,
 	LIST = 3,
-	MODULE = 4
+	MODULE = 4,
+	PROCESS = 5
 };
 
 namespace Globals {
+	static inline uintptr_t Address;
 	static inline signed int iDelay = 500;
-	static inline int Tab = 0, cModItem = 0;
+	static inline int Tab = 0, cModItem = 0, AddressValue = 0, wToAddr = 0;
 	static inline bool bTest = false;
 	static inline bool bList = false, bWindowFound = false, bWindowNotFound = false, bDumpOnce = false, bDisconnected = false;
-	static inline char WindowName[255] = "Enter Window Name...";
+	static inline char WindowName[255] = "Enter Window Name...", StrAddr[255] = "Input Address Here...";
 	static inline HWND WindowHandle = nullptr;
 	static inline ProcessDumper Dump;
 };
