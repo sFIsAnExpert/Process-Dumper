@@ -1,4 +1,4 @@
-# Cyrix Plutonium Zombies Menu
+# Process Dumper
 Process Dumper Using ImGui
 <h1>How To Use</h1>
 <ul>
