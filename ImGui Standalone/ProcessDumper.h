@@ -90,6 +90,10 @@ public:
 		WindowHandle = nullptr;
 		ProcessID = 0;
 		ProcessHandle = nullptr;
+		Failed = false;
+		Initiated = false;
+		ProcessDumper::Information::ListSize = 0;
+		memset(ProcessDumper::Information::List, 0, 1024);
 	}
 	Information Information;
 	Process Process;
