@@ -18,6 +18,7 @@ public:
 };
 
 enum TAB {
+	DEFAULT = 0,
 	LOADPROCESS = 1,
 	DUMP = 2,
 	LIST = 3,
